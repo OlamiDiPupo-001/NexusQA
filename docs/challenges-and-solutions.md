@@ -1,25 +1,25 @@
 # Challenges & Solutions
 
-## Phase 5 — repeated version mismatches traced to wrong assumed Python version
+## Phase 5 — ruff UP042 + mypy/ruff version mismatch
 
-**What broke:** Three separate-looking errors (ruff target-version invalid,
-StrEnum feature availability, mypy version format) across two commit
-attempts, all pointing at "wrong Python version" in different files.
+**What broke:** ruff-check failed with UP042 ("Class OrderStatus inherits
+from both str and enum.Enum"). Separately, .pre-commit-config.yaml had
+mypy targeting a different Python version than pyproject.toml.
 
-**Diagnosis:** Ran `python3 --version` directly instead of continuing to
-guess-and-check each config file individually.
+**Diagnosis:** ruff's error message directly suggested the fix
+(enum.StrEnum). The version mismatch was caught by inspection after
+noticing the two config files disagreed.
 
-**Root cause:** Actual installed Python was 3.14.4, but every config file
-had been set assuming 3.11 (the version originally instructed, without
-verifying against the real local install first). Additionally, ruff's
-current release doesn't yet recognize "py314" as a valid target — it
-tops out at py313.
+**Root cause:** StrEnum is a 3.11+ feature; since target-version was set
+to an older target, ruff correctly flagged the str+Enum pattern as
+outdated. The mypy version drifted separately, likely from a pre-commit
+autoupdate pulling newer default args.
 
-**Fix:** Verified real interpreter version first. Set pyproject.toml and
-.pre-commit-config.yaml to py313/3.13 (closest valid target ruff
-supports), rather than continuing to chase individual symptom errors.
+**Fix:** Switched OrderStatus to inherit from enum.StrEnum directly.
+Aligned mypy's --python-version arg to match pyproject.toml and the
+actual installed interpreter (3.14).
 
-**Lesson:** Always verify the actual installed tool version BEFORE setting
-config files, rather than assuming a documented/instructed version is
-correct — and check what your linting tools currently support, since
-tooling version support can lag behind the newest language release.
+**Lesson:** Python version needs to agree across every config file that
+references it (pyproject.toml, pre-commit hooks, actual installed
+interpreter) — drift between them causes confusing, unrelated-looking
+errors.
