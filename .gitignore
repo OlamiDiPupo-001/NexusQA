@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+venv/
+env/
+
+# Environment / secrets
+.env
+
+# Docker
+*.log
+
+# Pytest / coverage / reports
+.pytest_cache/
+.coverage
+htmlcov/
+reports/*
+!reports/.gitkeep
+allure-results/
+allure-report/
+
+# Node (for k6/Newman if npm-managed locally)
+node_modules/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
