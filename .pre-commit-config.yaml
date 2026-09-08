@@ -10,5 +10,5 @@ repos:
     rev: v2.3.1
     hooks:
       - id: mypy
-        #args: [--python-version=3.13]
+        args: [--python-version=3.13]
         additional_dependencies: [pydantic]
