@@ -42,3 +42,16 @@ def send_webhook(
         json=payload,
         headers={"X-Webhook-Signature": signature},
     )
+
+
+def send_malformed_webhook(base_url: str) -> httpx.Response:
+    """Sends a webhook payload missing a required field (order_id),
+    correctly signed over the malformed payload itself — so it passes
+    signature verification and actually reaches input validation."""
+    payload = {"event_id": "evt_malformed"}
+    signature = sign_payload(payload, settings.webhook_secret)
+    return httpx.post(
+        f"{base_url}/webhooks/payment",
+        json=payload,
+        headers={"X-Webhook-Signature": signature},
+    )

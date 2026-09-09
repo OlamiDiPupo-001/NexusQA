@@ -46,6 +46,19 @@ class ProcessedWebhookEvent(Base):
     order_id: Mapped[int] = mapped_column(nullable=False)
 
 
+class StockRecord(Base):
+    """A single limited-stock item, used ONLY to give Layer 3's
+    concurrency tests a real shared resource to race over. This is
+    intentionally not a general inventory system — that's out of scope
+    for v1 per the Phase 0 scoping decision."""
+
+    __tablename__ = "stock"
+
+    id: Mapped[int] = mapped_column(primary_key=True)
+    item_name: Mapped[str] = mapped_column(unique=True)
+    quantity: Mapped[int] = mapped_column(nullable=False)
+
+
 def init_db() -> None:
     Base.metadata.create_all(bind=engine)
 
@@ -68,3 +81,17 @@ def is_event_processed(db, event_id: str) -> bool:
 def mark_event_processed(db, event_id: str, order_id: int) -> None:
     db.add(ProcessedWebhookEvent(event_id=event_id, order_id=order_id))
     db.commit()
+
+
+def seed_stock(quantity: int = 3) -> None:
+    """(Re)sets the flash-sale stock item to a known quantity. Tests call
+    this directly before each run so leftover state never affects the
+    next test's result."""
+    db = SessionLocal()
+    existing = db.query(StockRecord).filter_by(item_name="flash_sale_item").first()
+    if existing:
+        existing.quantity = quantity
+    else:
+        db.add(StockRecord(item_name="flash_sale_item", quantity=quantity))
+    db.commit()
+    db.close()
