@@ -82,3 +82,24 @@ untyped style.
 prefer it from the start — the older style isn't wrong, but it actively
 fights static type checkers like mypy, and the fix often clears multiple
 seemingly-unrelated errors at once.
+
+## Phase 7 — Two deprecation warnings, one real, one still open
+
+**What appeared:** StarletteDeprecationWarning suggesting installation of
+`httpx2`, and an anyio.BlockingPortal deprecation warning originating
+from inside starlette's own testclient.py.
+
+**Correction:** Initially assumed httpx2 was not a real package — this
+was wrong. httpx2 is a real, Pydantic-stewarded continuation of httpx,
+and starlette's TestClient genuinely supports it as a replacement.
+
+**Decision:** Deferred switching to httpx2 for now. It's a very recently
+established package, and both framework/api_client.py and
+webhook_simulator/simulator.py depend on the HTTP client — swapping it
+mid-build introduces risk for a cosmetic warning, not a build failure.
+Revisiting as a deliberate task post-MVP, not during active feature work.
+
+**Lesson:** Verify claims about a package's existence/status before
+asserting them, even when they sound plausible. Also: a warning being
+"real" doesn't automatically mean the fix belongs right now — timing
+and blast radius matter as much as correctness.
