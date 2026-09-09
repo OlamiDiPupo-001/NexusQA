@@ -133,3 +133,27 @@ surface at all. The fix isn't "add a lock in application code," which
 only protects a single process; it's pushing the atomicity guarantee
 down into the database itself, so it holds even across multiple
 backend instances sharing one DB.
+
+## Phase 7B2 — Client Timeout on Slow Webhook Endpoint
+
+**What broke**: Initial version of `test_client_times_out_on_slow_response` used a
+server delay of 1.5s against a 1.0s client timeout. Test passed locally but flaked
+intermittently — occasionally the request completed instead of timing out.
+
+**How it was diagnosed**: Re-ran the test multiple times back-to-back; failure rate
+was inconsistent and correlated with system load, not code changes — a signature
+of a timing-margin problem rather than a logic bug.
+
+**Root cause**: The delay (1.5s) and the timeout (1.0s) were too close together.
+Minor jitter (CPU scheduling, network stack overhead) was enough to push actual
+response timing across the boundary in either direction, making the test's outcome
+non-deterministic.
+
+**Fix**: Increased the server-side delay to 3s while keeping the client timeout at
+1.0s, creating a wide safety margin. The client now reliably times out well before
+the server would ever respond, regardless of system jitter.
+
+**Why this matters**: A test that only fails sometimes is worse than no test — it
+erodes trust in the suite and wastes debugging time chasing "flakiness" instead of
+real bugs. Boundary-adjacent timing values should always be avoided when testing
+timeouts; leave a wide margin between the timeout and the delay being tested.
