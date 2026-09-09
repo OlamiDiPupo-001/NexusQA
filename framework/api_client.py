@@ -7,6 +7,7 @@ you add it here once — not in every single test file.
 """
 
 import httpx
+from tenacity import retry, retry_if_exception_type, stop_after_attempt, wait_exponential
 
 from framework.config import settings
 
@@ -25,3 +26,20 @@ class ApiClient:
 
     def close(self) -> None:
         self._client.close()
+
+    @retry(
+        retry=retry_if_exception_type(httpx.HTTPStatusError),
+        stop=stop_after_attempt(5),
+        wait=wait_exponential(min=0.5, max=4),
+        reraise=True,
+    )
+    def post_with_retry(self, path: str, **kwargs) -> httpx.Response:
+        """
+        POSTs with automatic retry+backoff on any HTTP error status
+        (including 429). reraise=True means if ALL attempts are
+        exhausted, the real underlying error is raised — not a generic
+        Tenacity wrapper exception — so test failures stay readable.
+        """
+        response = self._client.post(path, **kwargs)
+        response.raise_for_status()
+        return response

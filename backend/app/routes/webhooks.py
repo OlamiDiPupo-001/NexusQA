@@ -4,6 +4,9 @@ idempotency (event_id), THEN process. Order matters — see Phase 7 notes
 on why the idempotency check must short-circuit as early as possible.
 """
 
+import asyncio
+import time
+
 from fastapi import APIRouter, Depends, Header, HTTPException
 from sqlalchemy.orm import Session
 
@@ -15,6 +18,10 @@ from backend.app.db import (
 )
 from framework.config import settings
 from webhook_simulator.signing import verify_signature
+
+_request_timestamps: list[float] = []
+_RATE_LIMIT = 3  # max requests allowed
+_RATE_WINDOW = 2.0  # per this many seconds
 
 router = APIRouter()
 
@@ -48,3 +55,28 @@ def payment_webhook(
 
     mark_event_processed(db, event_id, order_id)
     return {"received": True, "duplicate": False}
+
+
+@router.post("/webhooks/rate-limited-endpoint")
+def rate_limited_endpoint():
+    """
+    Deliberately simple fixed-window rate limiter, existing purely to
+    give the Tenacity retry test something real to back off against.
+    Not a production-grade rate limiter — no need for one here.
+    """
+    now = time.monotonic()
+    _request_timestamps[:] = [t for t in _request_timestamps if now - t < _RATE_WINDOW]
+
+    if len(_request_timestamps) >= _RATE_LIMIT:
+        raise HTTPException(status_code=429, detail="Rate limit exceeded")
+
+    _request_timestamps.append(now)
+    return {"ok": True}
+
+
+@router.post("/webhooks/slow-endpoint")
+async def slow_endpoint():
+    """Deliberately slow response, purely to test client-side timeout
+    behavior — does the client fail fast and predictably, or hang?"""
+    await asyncio.sleep(3)
+    return {"ok": True}
