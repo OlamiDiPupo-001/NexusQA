@@ -24,5 +24,7 @@ class Settings:
     # Database connection string for direct SQL verification (Layer 2).
     db_url: str = os.getenv("NEXUSQA_DB_URL", "postgresql://nexusqa:nexusqa@localhost:5432/nexusqa")
 
+    webhook_secret: str = os.getenv("NEXUSQA_WEBHOOK_SECRET", "local-dev-secret-key")
+
 
 settings = Settings()

@@ -20,9 +20,7 @@ def live_server():
     driving an actual browser making real network requests.
     """
     proc = subprocess.Popen(["uvicorn", "backend.app.main:app", "--port", "8001"])
-    time.sleep(
-        2
-    )  # crude wait for startup — Phase 7 will replace this with a proper health-check poll
+    time.sleep(2)  # crude wait for startup — replaced with a health-check poll later
     yield "http://localhost:8001"
     proc.terminate()
 

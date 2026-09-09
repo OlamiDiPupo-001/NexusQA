@@ -56,3 +56,15 @@ def get_db():
         yield db
     finally:
         db.close()
+
+
+def is_event_processed(db, event_id: str) -> bool:
+    return (
+        db.query(ProcessedWebhookEvent).filter(ProcessedWebhookEvent.event_id == event_id).first()
+        is not None
+    )
+
+
+def mark_event_processed(db, event_id: str, order_id: int) -> None:
+    db.add(ProcessedWebhookEvent(event_id=event_id, order_id=order_id))
+    db.commit()
