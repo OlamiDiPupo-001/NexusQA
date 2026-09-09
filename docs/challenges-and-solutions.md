@@ -103,3 +103,33 @@ Revisiting as a deliberate task post-MVP, not during active feature work.
 asserting them, even when they sound plausible. Also: a warning being
 "real" doesn't automatically mean the fix belongs right now — timing
 and blast radius matter as much as correctness.
+
+## Phase 7B — Concurrency race condition: naive stock decrement oversold by 100%
+
+**What broke:** A deliberately naive "read stock, sleep, write stock"
+checkout endpoint, hit with 5 concurrent requests against a stock of 3,
+returned 5 successful 200 OK responses instead of the correct 3 — a
+complete failure to prevent overselling.
+
+**Diagnosis:** asyncio.gather() fired 5 real concurrent requests against
+a live uvicorn server. All 5 read quantity=3 before any of them wrote
+back a decrement, because the read-then-write logic wasn't atomic and
+an artificial 0.05s sleep widened the race window enough to make the
+collision happen every time rather than intermittently.
+
+**Root cause:** The naive implementation performed the stock check and
+the stock decrement as two separate steps (a SELECT, then an UPDATE),
+leaving a window where multiple requests could all pass the check before
+any of them applied their write.
+
+**Fix:** Replaced the two-step read-then-write with a single atomic SQL
+statement — `UPDATE stock SET quantity = quantity - 1 WHERE quantity > 0`
+— relying on the database's own locking to guarantee the check-and-
+decrement happens as one indivisible operation, not two.
+
+**Lesson:** A race condition doesn't announce itself in single-request
+testing — it requires deliberately generating real concurrent load to
+surface at all. The fix isn't "add a lock in application code," which
+only protects a single process; it's pushing the atomicity guarantee
+down into the database itself, so it holds even across multiple
+backend instances sharing one DB.
