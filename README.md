@@ -1,0 +1,1 @@
+![CI](https://github.com/OlamiDiPupo-001/NexusQA/actions/workflows/ci.yml/badge.svg)
