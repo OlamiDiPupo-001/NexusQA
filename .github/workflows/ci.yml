@@ -1,0 +1,93 @@
+name: NexusQA CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  lint-and-typecheck:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: pip install ruff mypy pydantic
+      - name: Ruff check
+        run: ruff check .
+      - name: Mypy check
+        run: mypy .
+
+  functional-and-security-tests:
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    strategy:
+      matrix:
+        browser: [chromium, firefox, webkit]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: pip install -r requirements-dev.txt
+      - run: playwright install ${{ matrix.browser }} --with-deps
+
+      - name: Start Docker Compose stack
+        run: docker compose up --build -d
+        env:
+          NEXUSQA_WEBHOOK_SECRET: ${{ secrets.NEXUSQA_WEBHOOK_SECRET }}
+
+      - name: Wait for backend to be reachable
+        run: |
+          for i in {1..15}; do
+            curl -sf http://localhost:8000/orders/1 && break
+            echo "Waiting for backend..." && sleep 2
+          done
+
+      - name: Run functional tests
+        env:
+          NEXUSQA_BACKEND_URL: http://localhost:8000
+        run: pytest tests/functional/ -v --browser ${{ matrix.browser }}
+
+      - name: Run security tests
+        env:
+          NEXUSQA_BACKEND_URL: http://localhost:8000
+        run: pytest tests/security/ -v
+
+      - name: Tear down Docker Compose stack
+        if: always()
+        run: docker compose down
+
+  chaos-tests:
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - run: pip install -r requirements-dev.txt
+
+      - name: Start Docker Compose stack
+        run: docker compose up --build -d
+        env:
+          NEXUSQA_WEBHOOK_SECRET: ${{ secrets.NEXUSQA_WEBHOOK_SECRET }}
+
+      - name: Wait for backend to be reachable
+        run: |
+          for i in {1..15}; do
+            curl -sf http://localhost:8000/orders/1 && break
+            echo "Waiting for backend..." && sleep 2
+          done
+
+      - name: Run chaos tests
+        env:
+          NEXUSQA_BACKEND_URL: http://localhost:8000
+          NEXUSQA_WEBHOOK_SECRET: ${{ secrets.NEXUSQA_WEBHOOK_SECRET }}
+        run: pytest tests/chaos/ -v
+
+      - name: Tear down Docker Compose stack
+        if: always()
+        run: docker compose down
