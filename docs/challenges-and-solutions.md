@@ -157,3 +157,32 @@ the server would ever respond, regardless of system jitter.
 erodes trust in the suite and wastes debugging time chasing "flakiness" instead of
 real bugs. Boundary-adjacent timing values should always be avoided when testing
 timeouts; leave a wide margin between the timeout and the delay being tested.
+
+## Phase 8B — Module-level rate-limit state leaking across tests
+
+**What broke:** `test_legitimate_requests_are_never_penalized` failed with
+a 429 on its very first request, despite sending only correctly-signed
+payloads — a test that should never trigger lockout at all.
+
+**Diagnosis:** Traced the 429 back to `_failed_signature_attempts` still
+holding 3 timestamps left over from the previous test
+(`test_repeated_invalid_signatures_trigger_lockout`), which ran
+immediately before it and well within the 5-second lockout window.
+
+**Root cause:** `_failed_signature_attempts` is module-level Python state,
+created once when `webhooks.py` is first imported. The existing DB
+fixture resets the database between tests, but this list isn't part of
+the database — nothing was resetting it, so state silently leaked from
+one test into the next.
+
+**Fix:** Added `reset_signature_lockout_state()` to clear both
+`_failed_signature_attempts` and `_request_timestamps` (the Phase 7
+general rate limiter has the identical leakage risk), wired in as an
+`autouse=True` fixture in `tests/security/conftest.py` so every test in
+that folder starts from a guaranteed clean slate automatically.
+
+**Lesson:** Database fixtures only protect against database-state
+leakage. Any module-level Python state (lists, counters, caches) needs
+its own explicit reset mechanism — and a test suite that only passes
+because of run order or timing gaps has a real bug, even while it's
+technically green.
