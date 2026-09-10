@@ -1,0 +1,37 @@
+services:
+  db:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: nexusqa
+      POSTGRES_PASSWORD: nexusqa
+      POSTGRES_DB: nexusqa
+    ports:
+      - "5432:5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U nexusqa"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+    ports:
+      - "8000:8000"
+    environment:
+      NEXUSQA_DB_URL: postgresql://nexusqa:nexusqa@db:5432/nexusqa
+      NEXUSQA_WEBHOOK_SECRET: ${NEXUSQA_WEBHOOK_SECRET}
+    depends_on:
+      db:
+        condition: service_healthy
+
+  webhook_simulator:
+    build:
+      context: .
+      dockerfile: webhook_simulator/Dockerfile
+    environment:
+      NEXUSQA_BACKEND_URL: http://backend:8000
+      NEXUSQA_WEBHOOK_SECRET: ${NEXUSQA_WEBHOOK_SECRET}
+    depends_on:
+      - backend

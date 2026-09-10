@@ -55,3 +55,15 @@ def send_malformed_webhook(base_url: str) -> httpx.Response:
         json=payload,
         headers={"X-Webhook-Signature": signature},
     )
+
+
+if __name__ == "__main__":
+    import time
+
+    from framework.config import settings
+
+    print(f"Webhook simulator ready, targeting {settings.backend_url}")
+    # Idle — this container exists to be invoked by tests calling into
+    # it over HTTP in later phases, not to run a standalone loop itself.
+    while True:
+        time.sleep(3600)

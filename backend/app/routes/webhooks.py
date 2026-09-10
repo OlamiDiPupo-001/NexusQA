@@ -110,3 +110,4 @@ def reset_signature_lockout_state() -> None:
     clean slate — module-level state like this doesn't get reset by the
     DB fixture, since it isn't the database."""
     _failed_signature_attempts.clear()
+    _request_timestamps.clear()
