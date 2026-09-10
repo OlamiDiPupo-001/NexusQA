@@ -33,6 +33,7 @@ class OrderRecord(Base):
     total_cents: Mapped[int] = mapped_column(nullable=False)
     status: Mapped[str] = mapped_column(nullable=False, default="pending")
     created_at: Mapped[datetime] = mapped_column(nullable=True)
+    session_id: Mapped[str] = mapped_column(nullable=True)
 
 
 class ProcessedWebhookEvent(Base):

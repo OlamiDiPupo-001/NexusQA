@@ -25,7 +25,12 @@ class CheckoutRequest(BaseModel):
 @router.post("/checkout")
 def checkout(request: CheckoutRequest, db: Session = Depends(get_db)):
     total = get_cart_total(request.session_id)
-    order = OrderRecord(total_cents=total, status="pending", created_at=datetime.now(UTC))
+    order = OrderRecord(
+        total_cents=total,
+        status="pending",
+        created_at=datetime.now(UTC),
+        session_id=request.session_id,
+    )
     db.add(order)
     db.commit()
     db.refresh(order)
@@ -55,8 +60,8 @@ def checkout_limited_stock(db: Session = Depends(get_db)):
     return {"order_id": order.id, "status": "purchased"}
 
 
-'''
-@router.post("/checkout/limited")
+'''    (expect it to FAIL)
+@router.post("/checkout/limited")       
 def checkout_limited_stock(db: Session = Depends(get_db)):
     """
     Deliberately naive read-then-write stock decrement. This EXISTS to

@@ -34,11 +34,11 @@ def test_order_lookup_after_checkout(client):
     checkout_response = client.post("/checkout", json={"session_id": "s3"})
     order_id = checkout_response.json()["order_id"]
 
-    lookup_response = client.get(f"/orders/{order_id}")
+    lookup_response = client.get(f"/orders/{order_id}", headers={"X-Session-Id": "s3"})
     assert lookup_response.status_code == 200
     assert lookup_response.json()["order_id"] == order_id
 
 
 def test_order_not_found_returns_404(client):
-    response = client.get("/orders/99999")
+    response = client.get("/orders/99999", headers={"X-Session-Id": "anything"})
     assert response.status_code == 404

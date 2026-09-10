@@ -4,7 +4,9 @@ from fastapi import FastAPI
 from fastapi.responses import HTMLResponse
 
 from backend.app.db import init_db
-from backend.app.routes import cart, checkout, orders, webhooks
+
+# from backend.app.routes import cart, checkout, orders, webhooks
+from backend.app.routes import cart, checkout, orders, stock, webhooks
 
 
 @asynccontextmanager
@@ -19,6 +21,7 @@ app.include_router(cart.router)
 app.include_router(checkout.router)
 app.include_router(orders.router)
 app.include_router(webhooks.router)
+app.include_router(stock.router)
 
 
 @app.get("/checkout-page", response_class=HTMLResponse)

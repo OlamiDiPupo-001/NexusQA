@@ -18,7 +18,7 @@ def test_checkout_response_matches_order_contract(client):
     checkout_response = client.post("/checkout", json={"session_id": "contract1"})
     order_id = checkout_response.json()["order_id"]
 
-    lookup_response = client.get(f"/orders/{order_id}")
+    lookup_response = client.get(f"/orders/{order_id}", headers={"X-Session-Id": "contract1"})
     data = lookup_response.json()
 
     # This is the actual contract check: if the backend's response shape
