@@ -5,6 +5,8 @@ so its current simplicity (no locking, no idempotency key) is deliberate —
 it's the honest baseline those tests are designed to stress.
 """
 
+import logging
+import time
 from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException
@@ -17,6 +19,8 @@ from backend.app.routes.cart import get_cart_total
 
 router = APIRouter()
 
+logger = logging.getLogger("nexusqa.checkout")
+
 
 class CheckoutRequest(BaseModel):
     session_id: str
@@ -24,6 +28,7 @@ class CheckoutRequest(BaseModel):
 
 @router.post("/checkout")
 def checkout(request: CheckoutRequest, db: Session = Depends(get_db)):
+    start = time.monotonic()
     total = get_cart_total(request.session_id)
     order = OrderRecord(
         total_cents=total,
@@ -34,6 +39,13 @@ def checkout(request: CheckoutRequest, db: Session = Depends(get_db)):
     db.add(order)
     db.commit()
     db.refresh(order)
+
+    duration_ms = round((time.monotonic() - start) * 1000, 2)
+    logger.info(
+        "checkout_completed",
+        extra={"order_id": order.id, "total_cents": total, "duration_ms": duration_ms},
+    )
+
     return {"order_id": order.id, "total_cents": order.total_cents, "status": order.status}
 
 

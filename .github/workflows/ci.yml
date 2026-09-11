@@ -56,6 +56,13 @@ jobs:
           NEXUSQA_BACKEND_URL: http://localhost:8000
         run: pytest tests/security/ -v
 
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-report-${{ matrix.browser }}
+          path: reports/
+          
       - name: Tear down Docker Compose stack
         if: always()
         run: docker compose down
