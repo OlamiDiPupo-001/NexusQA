@@ -7,6 +7,7 @@ from datetime import UTC, datetime
 
 from backend.app.db import OrderRecord, SessionLocal
 from framework.config import settings
+from framework.db_helpers import count_orders_with_status
 from webhook_simulator.signing import sign_payload
 
 
@@ -36,6 +37,8 @@ def test_duplicate_webhook_event_processed_once(client):
     # Direct DB check — proves only ONE processed-event row exists,
     # not just that the API "said" it handled duplicates correctly.
     db = SessionLocal()
-    count = db.query(OrderRecord).filter(OrderRecord.id == order_id).count()
+    # count = db.query(OrderRecord).filter(OrderRecord.id == order_id).count()
+    paid_count = count_orders_with_status(db, "paid")
     db.close()
-    assert count == 1  # order itself was never duplicated
+    # assert count == 1  # order itself was never duplicated
+    assert paid_count == 1
