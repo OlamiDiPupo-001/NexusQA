@@ -186,3 +186,29 @@ leakage. Any module-level Python state (lists, counters, caches) needs
 its own explicit reset mechanism — and a test suite that only passes
 because of run order or timing gaps has a real bug, even while it's
 technically green.
+
+
+## Phase 11 — Duplicate/leftover code caused TypeError instead of clean skip
+
+**What broke:** After adding the NEXUSQA_DISABLE_SIGNATURE_CHECK escape
+hatch, requests still crashed with a 500 (TypeError: unsupported operand
+types 'str' and 'NoneType' in hmac.compare_digest) even with the flag set.
+
+**Diagnosis:** docker compose logs backend revealed the actual
+traceback, pointing at an unconditional verify_signature() call still
+present in the file, separate from the new flag-guarded block.
+
+**Root cause:** The fix was added alongside the original lockout-check-
+and-verify code rather than replacing it — both blocks existed
+simultaneously. The flag-guarded block correctly skipped verification,
+but execution then fell through into the OLD unconditional block a few
+lines later, which called verify_signature() with x_webhook_signature
+still None (since no header was sent), causing the TypeError.
+
+**Lesson:** When a fix is described as "update this logic," always
+confirm the OLD version is actually removed, not left in place
+alongside the new one — a fall-through into leftover code produces
+confusing errors that look unrelated to the actual change just made.
+Always check the real container logs/traceback before guessing at a
+fix; the actual exception (TypeError on None) pointed directly at the
+true cause, which was different from the first hypothesis.
