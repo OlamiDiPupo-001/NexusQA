@@ -98,3 +98,40 @@ jobs:
       - name: Tear down Docker Compose stack
         if: always()
         run: docker compose down
+
+  performance-tests:
+    runs-on: ubuntu-latest
+    needs: lint-and-typecheck
+    continue-on-error: true  # informational only — doesn't block the pipeline
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install k6
+        run: |
+          sudo gpg -k
+          sudo gpg --no-default-keyring --keyring /usr/share/keyrings/k6-archive-keyring.gpg --keyserver hkp://keyserver.ubuntu.com:80 --recv-keys C5AD17C747E3415A3642D57D77C6C491D6AC1D69
+          echo "deb [signed-by=/usr/share/keyrings/k6-archive-keyring.gpg] https://dl.k6.io/deb stable main" | sudo tee /etc/apt/sources.list.d/k6.list
+          sudo apt-get update
+          sudo apt-get install k6
+
+      - name: Start Docker Compose stack
+        run: docker compose up --build -d
+        env:
+          NEXUSQA_WEBHOOK_SECRET: ${{ secrets.NEXUSQA_WEBHOOK_SECRET }}
+          NEXUSQA_DISABLE_SIGNATURE_CHECK: "true"
+
+      - name: Wait for backend
+        run: |
+          for i in {1..15}; do
+            curl -sf http://localhost:8000/orders/1 && break
+            sleep 2
+          done
+
+      - name: Run k6 checkout load test
+        run: k6 run performance/checkout_load.js
+
+      - name: Run k6 webhook load test
+        run: k6 run performance/webhook_load.js
+
+      - name: Tear down
+        if: always()
+        run: docker compose down
