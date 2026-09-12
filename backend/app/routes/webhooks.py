@@ -6,6 +6,7 @@ on why the idempotency check must short-circuit as early as possible.
 
 import asyncio
 import logging
+import os
 import time
 
 from fastapi import APIRouter, Depends, Header, HTTPException
@@ -39,7 +40,7 @@ router = APIRouter()
 def payment_webhook(
     payload: dict,
     db: Session = Depends(get_db),
-    x_webhook_signature: str = Header(...),
+    x_webhook_signature: str | None = Header(default=None),
 ):
     # 1. Verify authenticity FIRST — an unsigned/forged request should
     #    never reach idempotency or business logic at all.
@@ -53,9 +54,22 @@ def payment_webhook(
             detail="Too many failed signature attempts — temporarily locked out",
         )
 
-    if not verify_signature(payload, x_webhook_signature, settings.webhook_secret):
-        _failed_signature_attempts.append(now)
-        raise HTTPException(status_code=401, detail="Invalid webhook signature")
+    # Load-testing escape hatch, ONLY for measuring raw endpoint performance
+    # without HMAC computation overhead skewing results. NEVER set this in
+    # any real or CI environment — documented explicitly in decisions.md.
+    if os.getenv("NEXUSQA_DISABLE_SIGNATURE_CHECK") != "true":
+        now = time.monotonic()
+        _failed_signature_attempts[:] = [
+            t for t in _failed_signature_attempts if now - t < _LOCKOUT_WINDOW
+        ]
+        if len(_failed_signature_attempts) >= _MAX_FAILED_ATTEMPTS:
+            raise HTTPException(status_code=429, detail="Too many failed signature attempts")
+
+        if not x_webhook_signature or not verify_signature(
+            payload, x_webhook_signature, settings.webhook_secret
+        ):
+            _failed_signature_attempts.append(now)
+            raise HTTPException(status_code=401, detail="Invalid webhook signature")
 
     event_id = payload.get("event_id")
     order_id = payload.get("order_id")

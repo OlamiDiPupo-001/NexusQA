@@ -22,6 +22,7 @@ services:
     environment:
       NEXUSQA_DB_URL: postgresql://nexusqa:nexusqa@db:5432/nexusqa
       NEXUSQA_WEBHOOK_SECRET: ${NEXUSQA_WEBHOOK_SECRET}
+      NEXUSQA_DISABLE_SIGNATURE_CHECK: ${NEXUSQA_DISABLE_SIGNATURE_CHECK:-false}
     depends_on:
       db:
         condition: service_healthy
