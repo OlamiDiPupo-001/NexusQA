@@ -67,7 +67,7 @@ jobs:
         if: always()
         run: docker compose down
 
-            - name: Generate coverage badge
+      - name: Generate coverage badge
         if: matrix.browser == 'chromium'
         run: |
           pip install genbadge[coverage]
