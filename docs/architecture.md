@@ -1,48 +1,70 @@
-# Architecture Decision Records
+# NexusQA architecture
 
-## ADR-001: Custom minimal FastAPI backend instead of an existing mock API
-Building a small, purpose-built backend (4-5 endpoints) rather than using
-an existing fake e-commerce API gives full control over failure modes —
-specifically the ability to seed deliberate bugs (naive stock decrement,
-unsanitized logging, unparameterized SQL) that later phases catch and fix.
-An off-the-shelf mock couldn't guarantee these specific, demonstrable gaps.
+This document covers how the system is put together and how the test
+framework maps onto it. For how the codebase's files depend on each
+other, see [dependency-hierarchy.md](dependency-hierarchy.md). For how
+things are named across the project, see
+[naming-conventions.md](naming-conventions.md).
 
-## ADR-002: Layer-based repository structure instead of feature-based
-Organizing top-level folders by test layer (functional/chaos/security)
-rather than by feature (checkout/cart/orders) keeps each layer's
-pass/fail philosophy isolated. A chaos test and a security test hitting
-the same endpoint have fundamentally different intent; mixing them by
-feature would blur that distinction.
+## System architecture
 
-## ADR-003: Postgres via Docker Compose instead of SQLite for the running system
-SQLite is a single-file database with no separate server process — it
-can't accurately represent real concurrent-connection behavior. Since
-Layer 3's atomic-update fix depends specifically on real database
-locking guarantees, Postgres is required to make that proof meaningful,
-not just convenient for local development.
+![System architecture](system-architecture.png)
 
-## ADR-004: pytest-html instead of Allure for reporting
-Allure produces a more polished report but requires a separate
-Java-based generator and heavier CI setup. Given time constraints,
-pytest-html delivers a real, presentable artifact at a fraction of the
-setup cost — the right tool for a four-week solo build.
+Three services run in Docker Compose on a shared network: `backend`
+(FastAPI), `db` (Postgres), and `webhook_simulator`. The simulator
+initiates every request toward the backend and never receives calls
+back. It never touches the database directly either; its only job is building,
+signing, and sending HTTP requests.
 
-## ADR-005: k6 (JavaScript) for load testing despite an all-Python stack
-k6 is a Go binary with an embedded JS runtime; there's no mature
-Python-native load generator with equivalent performance characteristics
-(a Python-based load generator risks becoming the bottleneck itself at
-scale). Language consistency was traded for measurement validity.
+The backend's routes split into two groups. Most represent the real
+order and payment flow: `/cart/items`, `/checkout`, `/orders/{id}`,
+`/webhooks/payment`, `/stock/search`. A smaller set exists purely to
+give specific tests something to call: `/checkout/limited` (used to
+prove and then fix a concurrency race condition),
+`/webhooks/rate-limited-endpoint`, and `/webhooks/slow-endpoint`. A
+real integration would never call that second group.
 
-## ADR-006: Webhook load test runs with signature verification disabled
-k6's crypto primitives don't trivially replicate Python's hmac.new()
-without substantial manual reimplementation. Rather than fake a
-signature (producing misleading pass/fail results) or silently skip the
-limitation, the load test measures raw endpoint capacity via an
-explicit, environment-gated flag (NEXUSQA_DISABLE_SIGNATURE_CHECK),
-documented here and never enabled in CI or production paths.
+## Order and payment lifecycle
 
-## ADR-007: Tenacity over hand-rolled retry logic
-Hand-written retry/backoff loops are more error-prone than they appear,
-and Tenacity is a real, current, checkable production-grade tool —
-naming it specifically is a stronger signal than "I wrote a for-loop
-with sleep()".
+![Order and payment lifecycle](cycle.png)
+
+This traces one request through every branch that actually exists in
+the code, not just the path where everything succeeds. A webhook
+delivery can be rejected for three separate reasons before it ever
+reaches the order: too many recent failed signatures (429), an invalid
+or missing signature (401), or if it passes both of those a
+duplicate `event_id`, in which case it's accepted but makes no further
+change. That last case is the idempotency guarantee this project is
+built around. 
+
+Order lookup has its own nonexistent order returns 409,
+and a real order requested by a session that doesn't own it returns
+403. Only the owning session gets the actual order data back.
+
+## Seven-layer test framework
+
+![Seven-layer test framework](seven-layer.png)
+
+Layers 3 and 4 sit side by side rather than in sequence, since neither
+depends on the other running first — both build directly on Layer 2's
+working backend. Layers 1, 5, and 6 don't send requests to the system
+at all: Layer 1 is what everything else imports, Layer 5 builds and
+runs the environment, and Layer 6 observes whatever ran.
+
+A full breakdown of every test, which file it lives in, and what it
+proves is in [test-case-catalog.md](test-case-catalog.md).
+
+## Other documentation
+
+[decisions.md](decisions.md) —> why the project is built the way it is,
+covering language and framework choices, the custom mock backend, and
+several mid-build tooling decisions.
+
+[challenges-and-solutions.md](challenges-and-solutions.md) —> real bugs
+hit during the build, how each was diagnosed, and what fixed it.
+
+[test-data-strategy.md](test-data-strategy.md) —> the policy on never
+using real card numbers or real personal data anywhere in the project.
+
+[setup-and-run.md](setup-and-run.md) —> full local setup instructions
+and how the CI pipeline mirrors them step for step.
