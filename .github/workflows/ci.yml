@@ -197,9 +197,19 @@ jobs:
 
       - name: Download k6 results
         uses: actions/download-artifact@v4
+        continue-on-error: true
         with:
           name: k6-results
           path: artifacts/k6
+      
+      - name: Assemble public site
+        run: |
+          mkdir -p public/chromium public/firefox public/webkit public/chaos public/k6
+          cp -r artifacts/chromium/. public/chromium/
+          cp -r artifacts/firefox/. public/firefox/
+          cp -r artifacts/webkit/. public/webkit/
+          cp -r artifacts/chaos/. public/chaos/
+          cp -r artifacts/k6/. public/k6/ 2>/dev/null || echo "No k6 results available for this run"
 
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
