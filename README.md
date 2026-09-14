@@ -32,8 +32,8 @@ See the full picture including the order-and-payment lifecycle, the
 seven-layer test framework breakdown and how the codebase's files depend 
 on each other in [docs/architecture.md](docs/architecture.md). 
 
-## Repository structure
-
+## 📂 Repository structure
+'''
 nexusqa/
 ├── .github/
 │   └── workflows/
@@ -100,7 +100,7 @@ nexusqa/
 ├── pyproject.toml                     # ruff/mypy config, project metadata
 ├── pytest.ini                         # pytest config, markers for chaos/security/flaky tags
 └── README.md
-
+'''
 ## Core concepts
 
 **Idempotency** means processing the same event twice has no additional
@@ -144,10 +144,9 @@ interactive, auto-generated view of every endpoint.
 
 ## Reports
 
-Latest test report: [report.html](https://olamidipupo-001.github.io/NexusQA/report.html)
-Latest coverage: [coverage/index.html](https://olamidipupo-001.github.io/NexusQA/coverage/index.html)
-Artifacts on any run in the [Actions tab](https://github.com/OlamiDiPupo-001/NexusQA/actions/workflows/ci.yml).
+## Test dashboard
 
+[View all test reports, coverage, and load test results](https://olamidipupo-001.github.io/NexusQA/)
 
 ## Key metrics
 
