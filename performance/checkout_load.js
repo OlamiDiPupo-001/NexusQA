@@ -3,6 +3,10 @@
  * traffic (not a chaos/adversarial scenario — that's Layer 3's job)
  * and asserts the system holds a defined SLA threshold under load.
  */
+import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js";
+
+
+
 import http from 'k6/http';
 import { check } from 'k6';
 
@@ -40,4 +44,12 @@ export default function () {
   check(checkoutRes, {
     'checkout succeeded': (r) => r.status === 200,
   });
+}
+
+
+
+export function handleSummary(data) {
+  return {
+    "reports/k6-checkout-summary.html": htmlReport(data),
+  };
 }

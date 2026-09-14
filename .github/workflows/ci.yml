@@ -148,10 +148,10 @@ jobs:
           done
 
       - name: Run k6 checkout load test
-        run: k6 run --summary-export=reports/k6-checkout-summary.json performance/checkout_load.js
+        run: k6 run performance/checkout_load.js
 
       - name: Run k6 webhook load test
-        run: k6 run --summary-export=reports/k6-webhook-summary.json performance/webhook_load.js
+        run: k6 run performance/webhook_load.js
 
       - name: Upload k6 results
         if: always()
@@ -164,48 +164,44 @@ jobs:
         if: always()
         run: docker compose down
 
-  publish-dashboard:
+  publish-reports:
     runs-on: ubuntu-latest
     needs: [functional-and-security-tests, chaos-tests, performance-tests]
-    if: github.ref == 'refs/heads/main'
+    if: always() && github.ref == 'refs/heads/main'
     steps:
       - uses: actions/checkout@v4
 
-      - name: Download all report artifacts
+      - name: Download chromium report
         uses: actions/download-artifact@v4
         with:
-          path: artifacts
+          name: test-report-chromium
+          path: artifacts/chromium
 
-      - name: Build dashboard
-        run: |
-          mkdir -p public/chromium public/firefox public/webkit public/chaos public/k6
-          cp -r artifacts/test-report-chromium/* public/chromium/
-          cp -r artifacts/test-report-firefox/* public/firefox/
-          cp -r artifacts/test-report-webkit/* public/webkit/
-          cp -r artifacts/test-report-chaos/* public/chaos/
-          find artifacts/k6-results -name "*.json" -exec cp {} public/k6/ \;
+      - name: Download firefox report
+        uses: actions/download-artifact@v4
+        with:
+          name: test-report-firefox
+          path: artifacts/firefox
 
-          cat > public/index.html << 'EOF'
-          <!DOCTYPE html>
-          <html>
-          <head><title>NexusQA test dashboard</title></head>
-          <body>
-            <h1>NexusQA test dashboard</h1>
-            <p>Generated from the latest CI run on main.</p>
-            <ul>
-              <li><a href="chromium/report.html">Functional and security report (Chromium)</a></li>
-              <li><a href="chromium/coverage/index.html">Coverage report</a></li>
-              <li><a href="firefox/report.html">Functional and security report (Firefox)</a></li>
-              <li><a href="webkit/report.html">Functional and security report (WebKit)</a></li>
-              <li><a href="chaos/report.html">Chaos test report</a></li>
-              <li><a href="k6/k6-checkout-summary.json">k6 checkout load results</a></li>
-              <li><a href="k6/k6-webhook-summary.json">k6 webhook load results</a></li>
-            </ul>
-          </body>
-          </html>
-          EOF
+      - name: Download webkit report
+        uses: actions/download-artifact@v4
+        with:
+          name: test-report-webkit
+          path: artifacts/webkit
 
-      - name: Deploy dashboard to GitHub Pages
+      - name: Download chaos report
+        uses: actions/download-artifact@v4
+        with:
+          name: test-report-chaos
+          path: artifacts/chaos
+
+      - name: Download k6 results
+        uses: actions/download-artifact@v4
+        with:
+          name: k6-results
+          path: artifacts/k6
+
+      - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}

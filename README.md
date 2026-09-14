@@ -24,7 +24,7 @@ oversold a limited-stock item (5 successful checkouts against a stock of 3)
 before being closed with an atomic database update, a SQL injection
 vulnerability and an authorization bypass on order lookup.
 
-## Architecture
+## 🏛️ Architecture
 
 ![System architecture](docs/system-architecture.png)
 
@@ -37,8 +37,8 @@ on each other in [docs/architecture.md](docs/architecture.md).
 nexusqa/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                     # Layer 5 — multi-browser, gate-controlled pipeline
-├── backend/                           # Layer 1/2 target — the mock system under test
+│       └── ci.yml                     # multi-browser, gate-controlled pipeline
+├── backend/                           # the mock system under test
 │   ├── app/
 │   │   ├── routes/
 │   │   │   ├── cart.py
@@ -52,7 +52,7 @@ nexusqa/
 │   └── requirements.txt
 ├── docs/...
 │
-├── framework/                         # Layer 1 — core reusable framework code
+├── framework/                         # core reusable framework code
 │   ├── pom/                           # Page Object Model base + page classes
 │   │   ├── base_page.py
 │   │   ├── cart_page.py
@@ -61,13 +61,13 @@ nexusqa/
 │   ├── config.py                      # base URLs, env-based settings (local vs CI)
 │   ├── data_factories.py              # Faker-based synthetic data generation
 │   └── db_helpers.py                  # direct SQL query helpers for verification
-├── performance/                       # Layer 7 — k6 scripts, separate from chaos
+├── performance/                       # k6 scripts, separate from chaos
 │   ├── checkout_load.js
 │   └── webhook_load.js
-├── reports/                           # Layer 6 — gitignored, CI-published artifacts land here locally
+├── reports/                           #gitignored, CI-published artifacts land here locally
 │   └── .gitkeep
 ├── tests/
-│   ├── chaos/                         # Layer 3 — event-driven + resilience
+│   ├── chaos/                         # event-driven + resilience
 │   │   ├── conftest.py
 │   │   ├── test_concurrency_race_conditions.py
 │   │   ├── test_corrupted_payloads.py
@@ -75,19 +75,19 @@ nexusqa/
 │   │   ├── test_rate_limit_stress.py
 │   │   ├── test_webhook_idempotency.py
 │   │   └── test_webhook_signature_verification.py
-│   ├── functional/                    # Layer 2 — UI + API + contract tests
+│   ├── functional/                    # UI + API + contract tests
 │   │   ├── conftest.py
 │   │   ├── test_checkout_api.py
 │   │   ├── test_checkout_ui.py
 │   │   └── test_order_schema_contract.py
-│   ├── security/                      # Layer 4
+│   ├── security/                     
 │   │   ├── conftest.py
 │   │   ├── test_auth_rate_limit_abuse.py
 │   │   ├── test_authz_bypass.py
 │   │   ├── test_sensitive_data_exposure.py
 │   │   └── test_sql_injection.py
 │   └── conftest.py                    # root-level shared fixtures
-├── webhook_simulator/                 # Layer 3 target — controllable fake Stripe
+├── webhook_simulator/                 # controllable fake Stripe
 │   ├── Dockerfile
 │   ├── requirements.txt
 │   ├── signing.py                     # HMAC-SHA256 signature generation
@@ -95,13 +95,13 @@ nexusqa/
 ├── .env.example                       # documents required env vars, no real secrets
 ├── .gitignore
 ├── .pre-commit-config.yaml            # ruff + mypy hooks
-├── docker-compose.yml                 # Layer 5 — orchestrates backend + db + webhook_sim
+├── docker-compose.yml                 # orchestrates backend + db + webhook_sim
 ├── LICENSE
 ├── pyproject.toml                     # ruff/mypy config, project metadata
 ├── pytest.ini                         # pytest config, markers for chaos/security/flaky tags
 └── README.md
 '''
-## Core concepts
+## 🌀 Core concepts
 
 **Idempotency** means processing the same event twice has no additional
 effect the second time. so a retried payment never creates two orders.
@@ -121,7 +121,7 @@ system fails before it breaks by accident in production.
 - **Resilience** (Layer 3): ask if it stay correct under bad conditions like duplicates, delays
 - **Security** (Layer 4) ask whether it resist malicious input
 
-## How to run it
+## 💡 How to run it
 
     git clone https://github.com/OlamiDiPupo-001/NexusQA.git
     cd NexusQA
@@ -135,20 +135,24 @@ system fails before it breaks by accident in production.
 
     NEXUSQA_BACKEND_URL=http://localhost:8000 pytest tests/ -v
 
-Full setup instructions, including how CI mirrors these same steps and
-a troubleshooting section, are in
-[docs/setup-and-run.md](docs/setup-and-run.md).
+See the full setup instructions and troubleshooting in [docs/setup-and-run.md](docs/setup-and-run.md).
 
 Once the stack is running, `http://localhost:8000/docs` gives an
 interactive, auto-generated view of every endpoint.
 
-## Reports
+## 📊 Reports
 
-## Test dashboard
+All reports below are regenerated automatically on every push to main.
 
-[View all test reports, coverage, and load test results](https://olamidipupo-001.github.io/NexusQA/)
+Functional and Security test results — Chromium [report.html](https://olamidipupo-001.github.io/NexusQA/chromium/report.html) 
+Functional and Security test results — Firefox [report.html](https://olamidipupo-001.github.io/NexusQA/firefox/report.html) 
+Functional and Security test results — WebKit [report.html](https://olamidipupo-001.github.io/NexusQA/webkit/report.html) 
+Chaos test results [report.html](https://olamidipupo-001.github.io/NexusQA/chaos/report.html) 
+Coverage [coverage/index.html](https://olamidipupo-001.github.io/NexusQA/chromium/coverage/index.html) 
+k6 checkout load results [k6-checkout-summary.json](https://olamidipupo-001.github.io/NexusQA/k6/k6-checkout-summary.json) 
+k6 webhook load results [k6-webhook-summary.json](https://olamidipupo-001.github.io/NexusQA/k6/k6-webhook-summary.json) 
 
-## Key metrics
+## 🎯 Key metrics
 
 - 21 automated tests across correctness, resilience, and security
 - 85% code coverage across backend, framework, and simulator code
@@ -161,7 +165,7 @@ interactive, auto-generated view of every endpoint.
 Every test, the file it lives in, and what it proves is listed in
 [docs/test-case-catalog.md](docs/test-case-catalog.md).
 
-## Known limitations and future work
+## 🚧 Known limitations and future work
 
 v1 covers the order and payment lifecycle only. Inventory and
 fulfillment, user account management, and multi-product catalog
@@ -174,7 +178,7 @@ reliably in k6's JavaScript runtime was judged not worth the risk of
 producing misleading numbers. The full reasoning is in
 [docs/decisions.md](docs/decisions.md).
 
-## Documentation
+## 📚 Documentation
 
 [docs/architecture.md](docs/architecture.md) — system diagrams, the
 order and payment lifecycle, and the seven-layer test framework
@@ -196,11 +200,9 @@ mapped to what it proves
 on never using real card numbers or real personal data anywhere in the
 project
 
-## Tech stack
+## ⚙️Tech stack
 
-Python, FastAPI, SQLAlchemy 2.0, Pydantic v2, Playwright, HTTPX, Pytest,
-Tenacity, Docker, Docker Compose, GitHub Actions, k6, pytest-html,
-pytest-cov, ruff, mypy, pre-commit.
+Python | FastAPI | SQLAlchemy 2.0 | Pydantic v2 | Playwright | HTTPX | Pytest | Tenacity | Docker | Docker Compose | GitHub Actions | k6 | pytest-html | pytest-cov | ruff | mypy | pre-commit
 
 ## License
 
