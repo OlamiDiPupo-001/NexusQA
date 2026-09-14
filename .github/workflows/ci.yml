@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [main]
 
+permissions:
+  contents: write
+
 jobs:
   lint-and-typecheck:
     runs-on: ubuntu-latest
@@ -50,7 +53,7 @@ jobs:
         env:
           NEXUSQA_BACKEND_URL: http://localhost:8000
           NEXUSQA_WEBHOOK_SECRET: ${{ secrets.NEXUSQA_WEBHOOK_SECRET }}
-        run: pytest tests/functional/ test/security/ -v --browser ${{ matrix.browser }}
+        run: pytest tests/functional/ tests/security/ -v --browser ${{ matrix.browser }}
 
       - name: Upload test report
         if: always()
@@ -58,7 +61,7 @@ jobs:
         with:
           name: test-report-${{ matrix.browser }}
           path: reports/
-          
+
       - name: Tear down Docker Compose stack
         if: always()
         run: docker compose down
@@ -97,7 +100,7 @@ jobs:
         run: |
           for i in {1..15}; do
             curl -sf http://localhost:8000/orders/1 && break
-            echo "Waiting for backend..." && sleep 2
+            sleep 2
           done
 
       - name: Run chaos tests
@@ -113,7 +116,7 @@ jobs:
   performance-tests:
     runs-on: ubuntu-latest
     needs: lint-and-typecheck
-    continue-on-error: true  # informational only — doesn't block the pipeline
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Install k6
