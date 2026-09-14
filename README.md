@@ -1,7 +1,7 @@
-# NexusQA
+# NexusQA: E-commerce Test Automation Framework
 
 A full-stack test and chaos resilience framework for an event-driven
-e-commerce order and payment flow.
+e-commerce order and payment flow (cart -> checkout -> payment_webhook -> order_confirmation).
 
 ![CI](https://github.com/OlamiDiPupo-001/NexusQA/actions/workflows/ci.yml/badge.svg)
 ![Coverage](docs/coverage-badge.svg)
@@ -38,30 +38,25 @@ on each other in [docs/architecture.md](docs/architecture.md).
 ```
 nexusqa/
 ├── .github/
-│   └── workflows/
-│       └── ci.yml                # multi-browser, gate-controlled pipeline
+│   └── workflows/...             # multi-browser, gate-controlled pipeline
 ├── backend/                      # FastAPI app under test
-│   ├── app/
-│   │   ├── routes/...
-│   │   ├── db.py                 # DB connection/session logic
-│   │   ├── main.py               # FastAPI app entrypoint
-│   │   └── models.py             # Pydantic models 
+│   ├── app/...                   # Pydantic models, DB connection, masked card_number
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── docs/...
 ├── framework/                    # core reusable framework code
 │   ├── pom/...                   # Page Object Model base + page classes
-│   ├── api_client.py             # HTTPX wrapper client
+│   ├── api_client.py             # HTTPX wrapper client, Tenacity-based
 │   ├── config.py                 # base URLs, env-based settings (local vs CI)
 │   ├── data_factories.py         # Faker-based synthetic data generation
 │   └── db_helpers.py             # direct SQL query helpers for verification
 ├── performance/                  # k6 scripts, separate from chaos
 │   ├── checkout_load.js
 │   └── webhook_load.js
-├── reports/                      #gitignored, CI-published artifacts land here locally
+├── reports/...                   #gitignored, CI-published artifacts land here locally
 │   └── .gitkeep
 ├── tests/
-│   ├── chaos/...                 # event-driven + resilience
+│   ├── chaos/...                 # idempotency, signatures, races, retries, timeouts
 │   ├── functional/...            # Playwright UI + HTTPX API + contract tests
 │   ├── security/...              # SQL injection, auth bypass, PII exposure
 │   └── conftest.py               # root-level shared fixtures
@@ -82,23 +77,23 @@ nexusqa/
 
 ## 🌀 Core concepts
 
-**Idempotency** means processing the same event twice has no additional
+- **Idempotency** means processing the same event twice has no additional
 effect the second time. so a retried payment never creates two orders.
 
-A **race condition** is a bug that only exists because of timing. two
+- A  **race condition** is a bug that only exists because of timing. two
 requests reading and writing shared data at nearly the same moment.
 
-**Contract testing** checks that an API's actual response shape matches
+- **Contract testing** checks that an API's actual response shape matches
 what consumers expect, not just that it returned a 200.
 
-**Chaos engineering** means deliberately injecting failure conditions like
+- **Chaos engineering** means deliberately injecting failure conditions like
 duplicate events, corrupted payloads, latency, concurrency spikes to see how a 
 system fails before it breaks by accident in production.
 
-**Load vs. resilience vs. security testing** ask three different questions:
-- **Load** (Layer 7, k6): ask does it stay fast under heavy but normal traffic?
-- **Resilience** (Layer 3): ask if it stay correct under bad conditions like duplicates, delays
-- **Security** (Layer 4) ask whether it resist malicious input
+- **Load vs. resilience vs. security testing** ask three different questions:
+  - **Load** (Layer 7, k6): ask does it stay fast under heavy but normal traffic?
+  - **Resilience** (Layer 3): ask if it stay correct under bad conditions like duplicates, delays
+  - **Security** (Layer 4) ask whether it resist malicious input
 
 ## 💡 How to run it
 
@@ -123,13 +118,13 @@ interactive, auto-generated view of every endpoint.
 
 All reports below are regenerated automatically on every push to main.
 
-Functional and Security test results — Chromium [report.html](https://olamidipupo-001.github.io/NexusQA/chromium/report.html) 
-Functional and Security test results — Firefox [report.html](https://olamidipupo-001.github.io/NexusQA/firefox/report.html) 
-Functional and Security test results — WebKit [report.html](https://olamidipupo-001.github.io/NexusQA/webkit/report.html) 
-Chaos test results [report.html](https://olamidipupo-001.github.io/NexusQA/chaos/report.html) 
-Coverage [coverage/index.html](https://olamidipupo-001.github.io/NexusQA/chromium/coverage/index.html) 
-k6 checkout load results [k6-checkout-summary.json](https://olamidipupo-001.github.io/NexusQA/k6/k6-checkout-summary.json) 
-k6 webhook load results [k6-webhook-summary.json](https://olamidipupo-001.github.io/NexusQA/k6/k6-webhook-summary.json) 
+- Functional and Security test results — Chromium [report.html](https://olamidipupo-001.github.io/NexusQA/chromium/report.html) 
+- Functional and Security test results — Firefox [report.html](https://olamidipupo-001.github.io/NexusQA/firefox/report.html) 
+- Functional and Security test results — WebKit [report.html](https://olamidipupo-001.github.io/NexusQA/webkit/report.html) 
+- Chaos test results [report.html](https://olamidipupo-001.github.io/NexusQA/chaos/report.html) 
+- Coverage [coverage/index.html](https://olamidipupo-001.github.io/NexusQA/chromium/coverage/index.html) 
+- k6 checkout load results [k6-checkout-summary.json](https://olamidipupo-001.github.io/NexusQA/k6/k6-checkout-summary.json) 
+- k6 webhook load results [k6-webhook-summary.json](https://olamidipupo-001.github.io/NexusQA/k6/k6-webhook-summary.json) 
 
 ## 🎯 Key metrics
 
@@ -181,7 +176,7 @@ project
 
 ## ⚙️Tech stack
 
-Python | FastAPI | SQLAlchemy 2.0 | Pydantic v2 | Playwright | HTTPX | Pytest | Tenacity | Docker | Docker Compose | GitHub Actions | k6 | pytest-html | pytest-cov | ruff | mypy | pre-commit
+Python  |  FastAPI  |  SQLAlchemy 2.0  |  Pydantic v2  |  Playwright  |  HTTPX  |  Pytest  |  Tenacity  |  Docker  |  Docker Compose  |  GitHub Actions  |  k6  |  pytest-html  |  pytest-cov  |  ruff  |  mypy  |  pre-commit
 
 ## License
 
