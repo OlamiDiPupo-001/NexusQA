@@ -118,7 +118,7 @@ jobs:
 
       - name: Tear down Docker Compose stack
         if: always()
-        run: docker compose down
+        run: docker compose down 
 
   performance-tests:
     runs-on: ubuntu-latest
