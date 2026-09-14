@@ -33,7 +33,7 @@ seven-layer test framework breakdown and how the codebase's files depend
 on each other in [docs/architecture.md](docs/architecture.md). 
 
 ## 📂 Repository structure
-'''
+\'''
 nexusqa/
 ├── .github/
 │   └── workflows/
@@ -100,7 +100,7 @@ nexusqa/
 ├── pyproject.toml                     # ruff/mypy config, project metadata
 ├── pytest.ini                         # pytest config, markers for chaos/security/flaky tags
 └── README.md
-'''
+\'''
 ## 🌀 Core concepts
 
 **Idempotency** means processing the same event twice has no additional
