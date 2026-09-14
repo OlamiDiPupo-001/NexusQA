@@ -148,10 +148,10 @@ jobs:
           done
 
       - name: Run k6 checkout load test
-        run: k6 run performance/checkout_load.js
+        run: k6 run performance/checkout_load.js | tee reports/k6-checkout-summary.txt
 
       - name: Run k6 webhook load test
-        run: k6 run performance/webhook_load.js
+        run: k6 run performance/webhook_load.js | tee reports/k6-webhook-summary.txt
 
       - name: Upload k6 results
         if: always()
