@@ -102,10 +102,12 @@ system fails before it breaks by accident in production.
     cp .env.example .env    
     docker compose up --build -d
 
+
     python -m venv .venv
     source .venv/Scripts/activate    # Windows Git Bash
     pip install -r requirements-dev.txt
     playwright install chromium firefox webkit
+
 
     NEXUSQA_BACKEND_URL=http://localhost:8000 pytest tests/ -v
 
