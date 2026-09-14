@@ -33,74 +33,53 @@ seven-layer test framework breakdown and how the codebase's files depend
 on each other in [docs/architecture.md](docs/architecture.md). 
 
 ## 📂 Repository structure
-\'''
+
+
+```
 nexusqa/
 ├── .github/
 │   └── workflows/
-│       └── ci.yml                     # multi-browser, gate-controlled pipeline
-├── backend/                           # the mock system under test
+│       └── ci.yml                # multi-browser, gate-controlled pipeline
+├── backend/                      # FastAPI app under test
 │   ├── app/
-│   │   ├── routes/
-│   │   │   ├── cart.py
-│   │   │   ├── checkout.py
-│   │   │   ├── orders.py
-│   │   │   └── webhooks.py
-│   │   ├── db.py                      # DB connection/session logic
-│   │   ├── main.py                    # FastAPI app entrypoint
-│   │   └── models.py                  # Pydantic models (Order, WebhookEvent, etc.)
+│   │   ├── routes/...
+│   │   ├── db.py                 # DB connection/session logic
+│   │   ├── main.py               # FastAPI app entrypoint
+│   │   └── models.py             # Pydantic models 
 │   ├── Dockerfile
 │   └── requirements.txt
 ├── docs/...
-│
-├── framework/                         # core reusable framework code
-│   ├── pom/                           # Page Object Model base + page classes
-│   │   ├── base_page.py
-│   │   ├── cart_page.py
-│   │   └── checkout_page.py
-│   ├── api_client.py                  # HTTPX wrapper client
-│   ├── config.py                      # base URLs, env-based settings (local vs CI)
-│   ├── data_factories.py              # Faker-based synthetic data generation
-│   └── db_helpers.py                  # direct SQL query helpers for verification
-├── performance/                       # k6 scripts, separate from chaos
+├── framework/                    # core reusable framework code
+│   ├── pom/...                   # Page Object Model base + page classes
+│   ├── api_client.py             # HTTPX wrapper client
+│   ├── config.py                 # base URLs, env-based settings (local vs CI)
+│   ├── data_factories.py         # Faker-based synthetic data generation
+│   └── db_helpers.py             # direct SQL query helpers for verification
+├── performance/                  # k6 scripts, separate from chaos
 │   ├── checkout_load.js
 │   └── webhook_load.js
-├── reports/                           #gitignored, CI-published artifacts land here locally
+├── reports/                      #gitignored, CI-published artifacts land here locally
 │   └── .gitkeep
 ├── tests/
-│   ├── chaos/                         # event-driven + resilience
-│   │   ├── conftest.py
-│   │   ├── test_concurrency_race_conditions.py
-│   │   ├── test_corrupted_payloads.py
-│   │   ├── test_latency_injection.py
-│   │   ├── test_rate_limit_stress.py
-│   │   ├── test_webhook_idempotency.py
-│   │   └── test_webhook_signature_verification.py
-│   ├── functional/                    # UI + API + contract tests
-│   │   ├── conftest.py
-│   │   ├── test_checkout_api.py
-│   │   ├── test_checkout_ui.py
-│   │   └── test_order_schema_contract.py
-│   ├── security/                     
-│   │   ├── conftest.py
-│   │   ├── test_auth_rate_limit_abuse.py
-│   │   ├── test_authz_bypass.py
-│   │   ├── test_sensitive_data_exposure.py
-│   │   └── test_sql_injection.py
-│   └── conftest.py                    # root-level shared fixtures
-├── webhook_simulator/                 # controllable fake Stripe
+│   ├── chaos/...                 # event-driven + resilience
+│   ├── functional/...            # Playwright UI + HTTPX API + contract tests
+│   ├── security/...              # SQL injection, auth bypass, PII exposure
+│   └── conftest.py               # root-level shared fixtures
+├── webhook_simulator/            # controllable fake Stripe
 │   ├── Dockerfile
 │   ├── requirements.txt
-│   ├── signing.py                     # HMAC-SHA256 signature generation
-│   └── simulator.py                   # sends signed webhook POSTs, supports delay/duplicate/corrupt modes
-├── .env.example                       # documents required env vars, no real secrets
+│   ├── signing.py                # HMAC-SHA256 signature generation
+│   └── simulator.py              # sends signed webhook POSTs, supports delay/duplicate/corrupt modes
+├── .env.example                  # documents required env vars, no real secrets
 ├── .gitignore
-├── .pre-commit-config.yaml            # ruff + mypy hooks
-├── docker-compose.yml                 # orchestrates backend + db + webhook_sim
+├── .pre-commit-config.yaml       # ruff + mypy hooks
+├── docker-compose.yml            # orchestrates backend + db + webhook_sim
 ├── LICENSE
-├── pyproject.toml                     # ruff/mypy config, project metadata
-├── pytest.ini                         # pytest config, markers for chaos/security/flaky tags
+├── pyproject.toml                # ruff/mypy config, project metadata
+├── pytest.ini                    # pytest config, markers for chaos/security/flaky tags
 └── README.md
-\'''
+```
+
 ## 🌀 Core concepts
 
 **Idempotency** means processing the same event twice has no additional
