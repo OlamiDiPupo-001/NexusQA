@@ -46,15 +46,11 @@ jobs:
             echo "Waiting for backend..." && sleep 2
           done
 
-      - name: Run functional tests
+      - name: Run functional and security tests
         env:
           NEXUSQA_BACKEND_URL: http://localhost:8000
-        run: pytest tests/functional/ -v --browser ${{ matrix.browser }}
-
-      - name: Run security tests
-        env:
-          NEXUSQA_BACKEND_URL: http://localhost:8000
-        run: pytest tests/security/ -v
+          NEXUSQA_WEBHOOK_SECRET: ${{ secrets.NEXUSQA_WEBHOOK_SECRET }}
+        run: pytest tests/functional/ test/security/ -v --browser ${{ matrix.browser }}
 
       - name: Upload test report
         if: always()
