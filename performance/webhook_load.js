@@ -3,9 +3,6 @@
  * automated traffic path in a real payment system, per Phase 1's
  * problem statement.
  */
-import { htmlReport } from "https://raw.githubusercontent.com/benc-uk/k6-reporter/main/dist/bundle.js";
-
-
 
 import http from 'k6/http';
 import { check } from 'k6';
@@ -47,12 +44,4 @@ export default function () {
   });
 
   check(res, { 'request completed': (r) => r.status !== 0 });
-}
-
-
-
-export function handleSummary(data) {
-  return {
-    "reports/k6-checkout-summary.html": htmlReport(data),
-  };
 }
